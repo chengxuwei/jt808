@@ -10,7 +10,7 @@ func main() {
 	//如果有多个服务，用GO异步处理
 	go pkg.StartJT808()
 	//启动HTTP服务，TODO传JT808Server的SessionManager接口给HTTPServer实现下行数据发送
-
+	go pkg.StartMqttBroker()
 	//阻塞
 	select {}
 }
