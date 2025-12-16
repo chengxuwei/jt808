@@ -4,12 +4,14 @@ import (
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"
+	"github.com/mochi-mqtt/server/v2/packets"
 	"log"
+	"time"
 )
 
 func StartMqttBroker() {
 	options := &mqtt.Options{
-		// InflightTTL: 60 * 15, // Set an example custom 15-min TTL for inflight messages
+		InlineClient: true,
 	}
 
 	server := mqtt.New(options)
@@ -46,8 +48,29 @@ func StartMqttBroker() {
 		log.Fatal(err)
 	}
 
+	// 4. 订阅示例
+	callbackFn := func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet) {
+		server.Log.Info("收到一个MQTT消息，转发到JT808服务器", "client", cl.ID, "subscriptionId", sub.Identifier, "topic", pk.TopicName, "payload", string(pk.Payload))
+	}
+	server.Subscribe("direct/#", 1, callbackFn)
+
+	// 5. 启动服务
 	err1 := server.Serve()
 	if err1 != nil {
 		log.Fatal(err)
 	}
+	// 3. 发布示例
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			//todo 定义全局变量从JT808收到消息转发MQTT
+			if errr := server.Publish("topic/test", []byte("test"), true, 1); errr != nil {
+				log.Fatal(errr)
+			}
+		}
+	}
+
 }

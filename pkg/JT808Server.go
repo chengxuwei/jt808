@@ -11,7 +11,7 @@ import (
 
 func StartJT808() {
 	ln, err := net.Listen("tcp", ":1808")
-	log.Println("Server listening on :1808")
+	log.Println("JT808 服务器临听 :1808")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -22,7 +22,6 @@ func StartJT808() {
 	//handlerMap[0x0200] = &handler.JT0200Handler{}
 	for {
 		conn, err := ln.Accept()
-		defer conn.Close()
 		if err != nil {
 			log.Println("accept error:", err)
 			continue

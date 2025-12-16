@@ -37,7 +37,7 @@ type (
 	  注册Handler
 */
 func RegisterDecoder(msgId uint16, handler JT808Codec) {
-	slog.Info("注册一个解码器", slog.Any("msgId", msgId))
+	slog.Info("注册一个解码器", slog.Any("msgId", fmt.Sprintf("%04x", msgId)))
 	decodeFuncMap[msgId] = handler
 }
 
