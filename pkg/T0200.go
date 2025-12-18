@@ -5,6 +5,11 @@ import (
 	"log/slog"
 )
 
+/**
+*
+	位置上报
+*/
+
 type T0200 struct {
 	JTMessage
 	Alarm  uint32  `json:"Alarm"`
@@ -16,6 +21,7 @@ type T0200 struct {
 func init() {
 	RegisterDecoder(P0200, &T0200{})
 }
+
 func (h *T0200) Parse(jtMsg *JTMessage) error {
 	// 基础信息
 	h.JTMessage = *jtMsg
@@ -37,4 +43,7 @@ func (h *T0200) Parse(jtMsg *JTMessage) error {
 func (h *T0200) Encode() []byte {
 	//发送时先编码信息
 	return []byte{0x02, 0x00}
+}
+func (h *T0200) Name() string {
+	return h.MsgID.String()
 }

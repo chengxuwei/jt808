@@ -1,7 +1,7 @@
 package pkg
 
 type JTMessage struct {
-	MsgID      uint16 `json:"MsgID"`
+	MsgID      MsgId  `json:"MsgID"`
 	Prop       uint16 `json:"Prop"`
 	TerminalNo string `json:"TerminalNo"`
 	SeqNo      uint16 `json:"SeqNo"`

@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+type MQTTServer struct {
+}
+
 func StartMqttBroker() {
 	options := &mqtt.Options{
 		InlineClient: true,
