@@ -41,40 +41,40 @@ func (msgId MsgId) String() string {
 
 	switch msgId {
 	case P0001:
-		return "终端-通用应答"
+		return "P0001终端-通用应答"
 	case P0002:
-		return "终端-心跳"
+		return "P0002终端-心跳"
 	case P8001:
-		return "平台-通用应答"
+		return "P8001平台-通用应答"
 	case P0100:
-		return "终端-注册"
+		return "P0100终端-注册"
 	case P8100:
-		return "平台-终端注册应答"
+		return "P8100平台-终端注册应答"
 	case P0003:
-		return "终端-注销"
+		return "P0003终端-注销"
 	case P0102:
-		return "终端-鉴权"
+		return "P0102终端-鉴权"
 	case P0200:
-		return "终端-位置信息上报"
+		return "P0200终端-位置信息上报"
 	case P0704:
-		return "终端-位置信息批量上传"
+		return "P0704终端-位置信息批量上传"
 	case P8103:
-		return "平台-设置终端参数"
+		return "P8103平台-设置终端参数"
 	case P8105:
-		return "平台-终端控制"
+		return "P8105平台-终端控制"
 	case P8104:
-		return "平台-查询终端参数"
+		return "P8104平台-查询终端参数"
 	case P0104:
-		return "终端-查询终端参数应答"
+		return "P0104终端-查询终端参数应答"
 	case P8201:
-		return "平台-位置信息查询"
+		return "P8201平台-位置信息查询"
 	case P0201:
-		return "终端-位置信息查询应答"
+		return "P0201终端-位置信息查询应答"
 
 	case P8300:
-		return "终端-文本信息下发"
+		return "P8300终端-文本信息下发"
 	case P6006:
-		return "终端-批量位置信息上报"
+		return "P6006终端-批量位置信息上报"
 	}
 
 	return "平台-暂未实现的命令"
@@ -97,7 +97,7 @@ type (
 	  注册Handler
 */
 func RegisterDecoder(msgId MsgId, handler JT808Codec) {
-	slog.Info("注册一个解码器", slog.Any("msgId", fmt.Sprintf("%04x", msgId)))
+	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(msgId))), slog.Any("msgId", msgId.String()))
 	decodeFuncMap[msgId] = handler
 }
 

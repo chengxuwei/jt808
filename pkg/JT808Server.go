@@ -58,8 +58,8 @@ func parseFrame(conn net.Conn) {
 		slog.Info("转义解码后的帧", slog.Any("frame", hex.EncodeToString(frame)))
 		//解析头,默认不分包
 		msg := JTMessage{
-			MsgID:      binary.BigEndian.Uint16(frame[1:3]), //后面字节是[1)
-			Prop:       binary.BigEndian.Uint16(frame[3:5]), //后面字节是[3)
+			MsgID:      MsgId(binary.BigEndian.Uint16(frame[1:3])), //后面字节是[1)
+			Prop:       binary.BigEndian.Uint16(frame[3:5]),        //后面字节是[3)
 			TerminalNo: BCDToString(frame[5:11]),
 			SeqNo:      binary.BigEndian.Uint16(frame[11:13]), //后面字节是[3),
 			PkgCount:   0,
