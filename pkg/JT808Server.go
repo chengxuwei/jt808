@@ -71,9 +71,9 @@ func parseFrame(conn net.Conn) {
 			msg.PkgNo = binary.BigEndian.Uint16(frame[15:17])
 			msg.Body = frame[17:]
 		} else {
-			msg.Body = frame[13:]
+			msg.Body = frame[13 : len(frame)-2]
 		}
-		slog.Info("收到一个数据包", slog.Any("msg", hex.EncodeToString(msg.Body)))
+		slog.Info("收到BODY", slog.Any("msg", hex.EncodeToString(msg.Body)))
 		decoder := GetDecoder(msg.MsgID)
 		if decoder != nil {
 			//解析字段

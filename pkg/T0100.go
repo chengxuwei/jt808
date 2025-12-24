@@ -1,5 +1,7 @@
 package pkg
 
+import "fmt"
+
 /*
 *
 
@@ -7,6 +9,9 @@ package pkg
 */
 type T0100 struct {
 	JTMessage
+	ProvinceId uint16 `json:"province_id"` //省份ID
+	CityId     uint16 `json:"city_id"`     //城市ID
+
 }
 
 func init() {
@@ -17,6 +22,11 @@ func init() {
 func (h *T0100) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
 
+	//len(msg.Body)
+	// 检查body长度是否为0
+	if len(msg.Body) != 0 {
+		return fmt.Errorf("body长度错误，期望为0，实际为%d", len(msg.Body))
+	}
 	return nil
 }
 
