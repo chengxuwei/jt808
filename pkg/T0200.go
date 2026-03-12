@@ -3,6 +3,7 @@ package pkg
 import (
 	"encoding/binary"
 	"log/slog"
+	"net"
 )
 
 /**
@@ -18,8 +19,15 @@ type T0200 struct {
 	Lon    float32 `json:"Lon"`
 }
 
+func (h *T0200) OnMsg(conn net.Conn) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func init() {
-	RegisterDecoder(P0200, &T0200{})
+	codec := &T0200{}
+	codec.MsgID = P0200
+	RegisterCodec(codec)
 }
 
 func (h *T0200) Parse(jtMsg *JTMessage) error {
@@ -44,6 +52,6 @@ func (h *T0200) Encode() []byte {
 	//发送时先编码信息
 	return []byte{0x02, 0x00}
 }
-func (h *T0200) Name() string {
-	return h.MsgID.String()
+func (h *T0200) GetMsgId() MsgId {
+	return P0200
 }

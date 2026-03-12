@@ -1,5 +1,7 @@
 package pkg
 
+import "net"
+
 /*
 *
  */
@@ -7,9 +9,15 @@ type T8201 struct {
 	JTMessage
 }
 
-func init() {
+func (h *T8201) OnMsg(conn net.Conn) {
+	//TODO implement me
+	panic("implement me")
+}
 
-	RegisterDecoder(P8201, &T8201{})
+func init() {
+	codec := &T8201{}
+	codec.MsgID = P8201
+	RegisterCodec(codec)
 }
 func (h *T8201) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
@@ -19,6 +27,6 @@ func (h *T8201) Parse(msg *JTMessage) error {
 
 func (h *T8201) Encode() []byte { return []byte{0x02, 0x00} }
 
-func (h *T8201) Name() string {
-	return h.MsgID.String()
+func (h *T8201) GetMsgId() MsgId {
+	return h.MsgID
 }

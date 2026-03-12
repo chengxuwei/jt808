@@ -1,12 +1,21 @@
 package pkg
 
+import "net"
+
 type T0003 struct {
 	JTMessage
 }
 
+func (h *T0003) OnMsg(conn net.Conn) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func init() {
 
-	RegisterDecoder(P0003, &T0003{})
+	codec := &T0003{}
+	codec.MsgID = P0003
+	RegisterCodec(codec)
 }
 func (h *T0003) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
@@ -16,6 +25,6 @@ func (h *T0003) Parse(msg *JTMessage) error {
 
 func (h *T0003) Encode() []byte { return []byte{0x02, 0x00} }
 
-func (h *T0003) Name() string {
-	return h.MsgID.String()
+func (h *T0003) GetMsgId() MsgId {
+	return h.MsgID
 }

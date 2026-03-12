@@ -2,8 +2,8 @@ package pkg
 
 import (
 	"bufio"
-	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"log/slog"
 	"net"
@@ -57,29 +57,17 @@ func parseFrame(conn net.Conn) {
 		}
 		slog.Info("转义解码后的帧", slog.Any("frame", hex.EncodeToString(frame)))
 		//解析头,默认不分包
-		msg := JTMessage{
-			MsgID:      MsgId(binary.BigEndian.Uint16(frame[1:3])), //后面字节是[1)
-			Prop:       binary.BigEndian.Uint16(frame[3:5]),        //后面字节是[3)
-			TerminalNo: BCDToString(frame[5:11]),
-			SeqNo:      binary.BigEndian.Uint16(frame[11:13]), //后面字节是[3),
-			PkgCount:   0,
-			PkgNo:      0,
-		}
-		//是否分包
-		if (msg.Prop >> 13 & 1) == 1 {
-			msg.PkgCount = binary.BigEndian.Uint16(frame[13:15])
-			msg.PkgNo = binary.BigEndian.Uint16(frame[15:17])
-			msg.Body = frame[17:]
-		} else {
-			msg.Body = frame[13 : len(frame)-2]
-		}
+		msg := ParseFrame(frame)
 		slog.Info("收到BODY", slog.Any("msg", hex.EncodeToString(msg.Body)))
 		decoder := GetDecoder(msg.MsgID)
 		if decoder != nil {
+
+			slog.Info("调用解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(decoder.GetMsgId()))), slog.Any("msgId", decoder.GetMsgId().String()))
 			//解析字段
 			decoder.Parse(&msg)
 			//分派处理
-			OnMsg(decoder, conn)
+			//OnMsg(decoder, conn)
+			decoder.OnMsg(conn)
 		} else {
 			slog.Info("没找到", slog.Any("msg", msg))
 		}

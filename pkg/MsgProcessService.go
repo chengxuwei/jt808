@@ -84,7 +84,9 @@ type (
 	JT808Codec interface {
 		Parse(jtMsg *JTMessage) error // 解析终端上传的body数据
 		Encode() []byte
-		Name() string //返回名称
+		GetMsgId() MsgId
+		//消息处理
+		OnMsg(conn net.Conn) //返回名称
 	}
 	Session struct {
 		Conn net.Conn
@@ -96,9 +98,10 @@ type (
 		*
 	  注册Handler
 */
-func RegisterDecoder(msgId MsgId, handler JT808Codec) {
-	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(msgId))), slog.Any("msgId", msgId.String()))
-	decodeFuncMap[msgId] = handler
+func RegisterCodec(handler JT808Codec) {
+	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(handler.GetMsgId()))), slog.Any("msgId", handler.GetMsgId().String()))
+
+	decodeFuncMap[handler.GetMsgId()] = handler
 }
 
 /*
@@ -112,11 +115,11 @@ func SendMsgToDevice(imei string, msg []byte) {
 	}
 }
 
-func saveSession(imei string, conn net.Conn) {
-	sessionMap.Store(imei, &Session{
-		Conn: conn,
-		IMEI: imei,
-	})
+/**
+ * 注册Session
+ */
+func RegisterSession(session *Session) {
+	sessionMap.Store(session.IMEI, session)
 }
 func idelSession(imei string, conn net.Conn) {
 
@@ -127,7 +130,8 @@ func idelSession(imei string, conn net.Conn) {
 获取Handler
 */
 func GetDecoder(msgId MsgId) JT808Codec {
-	return decodeFuncMap[msgId]
+	decoder := decodeFuncMap[msgId]
+	return decoder
 }
 
 /*
@@ -145,18 +149,19 @@ w
   - 处理消息
     conn 注册Session,或发布
 */
-func OnMsg(decoder JT808Codec, conn net.Conn) {
-	switch decoder.(type) {
-	case *T0200:
-		OnT0200(decoder.(*T0200))
-		fmt.Println("T0200分发处理")
-	case *T0100:
-		OnT0100(decoder.(*T0100))
-		fmt.Println("T0100分发处理")
-	}
-}
+//func OnMsg(decoder JT808Codec, conn net.Conn) {
+//	switch decoder.(type) {
+//	case *T0200:
+//		OnT0200(decoder.(*T0200))
+//		fmt.Println("T0200分发处理")
+//	case *T0100:
+//		OnT0100(decoder.(*T0100))
+//		fmt.Println("T0100分发处理")
+//	}
+//}
 
 func OnT0100(t0100 *T0100) {
+
 	//TODO 1. 推送消息到三方 2.注册Session，保存会话
 }
 

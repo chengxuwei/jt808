@@ -1,6 +1,10 @@
 package pkg
 
-import "fmt"
+import (
+	"fmt"
+	"log/slog"
+	"net"
+)
 
 /*
 *
@@ -14,24 +18,43 @@ type T0100 struct {
 
 }
 
+func (h *T0100) OnMsg(conn net.Conn) {
+	//TODO implement me
+
+	t8100 := T8100{
+		JTMessage: JTMessage{
+			MsgID:      P8100,
+			TerminalNo: h.TerminalNo,
+		},
+		ResponseSeqNo: h.SeqNo,
+		Status:        0,
+		token:         "token",
+	}
+
+	conn.Write(t8100.Encode())
+}
+
 func init() {
 	//注册 TODO ，保证协程安全，可在连接时动态创建
 	//TODO 增加context上下文处理
-	RegisterDecoder(P0100, &T0100{})
+	codec := &T0100{}
+	codec.MsgID = P0100
+	RegisterCodec(codec)
 }
 func (h *T0100) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
-
+	slog.Info("解析数据，然后Process处理", slog.Any("msg", msg))
 	//len(msg.Body)
 	// 检查body长度是否为0
 	if len(msg.Body) != 0 {
 		return fmt.Errorf("body长度错误，期望为0，实际为%d", len(msg.Body))
 	}
+
 	return nil
 }
 
 func (h *T0100) Encode() []byte { return []byte{0x02, 0x00} }
 
-func (h *T0100) Name() string {
-	return h.MsgID.String()
+func (h *T0100) GetMsgId() MsgId {
+	return P0100
 }
