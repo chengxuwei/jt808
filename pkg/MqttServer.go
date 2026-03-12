@@ -6,18 +6,22 @@ import (
 	"github.com/mochi-mqtt/server/v2/listeners"
 	"github.com/mochi-mqtt/server/v2/packets"
 	"log"
-	"time"
 )
 
 type MQTTServer struct {
+	server *mqtt.Server
 }
 
-func StartMqttBroker() {
+func (m *MQTTServer) PublishMsg(topic string, msg string, qos byte) {
+	m.server.Publish(topic, []byte(msg), true, 1)
+}
+
+func (m *MQTTServer) StartMqttBroker() {
 	options := &mqtt.Options{
 		InlineClient: true,
 	}
-
 	server := mqtt.New(options)
+
 	// 创建基于用户名密码的认证
 	//server.AddHook(new(auth.Hook), &auth.Options{
 	//	Ledger: &auth.Ledger{
@@ -63,17 +67,17 @@ func StartMqttBroker() {
 		log.Fatal(err)
 	}
 	// 3. 发布示例
-	ticker := time.NewTicker(5 * time.Second)
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			//todo 定义全局变量从JT808收到消息转发MQTT
-			if errr := server.Publish("topic/test", []byte("test"), true, 1); errr != nil {
-				log.Fatal(errr)
-			}
-		}
-	}
+	//ticker := time.NewTicker(5 * time.Second)
+	//defer ticker.Stop()
+	//
+	//for {
+	//	select {
+	//	case <-ticker.C:
+	//		//todo 定义全局变量从JT808收到消息转发MQTT
+	//		if errr := server.Publish("topic/test", []byte("{\"a\": \"b\"}"), true, 1); errr != nil {
+	//			log.Fatal(errr)
+	//		}
+	//	}
+	//}
 
 }
