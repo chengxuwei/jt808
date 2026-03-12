@@ -1,6 +1,9 @@
 package pkg
 
-import "net"
+import (
+	"log/slog"
+	"net"
+)
 
 type T0003 struct {
 	JTMessage
@@ -8,7 +11,7 @@ type T0003 struct {
 
 func (h *T0003) OnMsg(conn net.Conn) {
 	//TODO implement me
-	panic("implement me")
+	slog.Info("收到终端注销请求")
 }
 
 func init() {

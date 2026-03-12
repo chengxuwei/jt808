@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 	"net"
@@ -18,22 +19,6 @@ type T0100 struct {
 
 }
 
-func (h *T0100) OnMsg(conn net.Conn) {
-	//TODO implement me
-
-	t8100 := T8100{
-		JTMessage: JTMessage{
-			MsgID:      P8100,
-			TerminalNo: h.TerminalNo,
-		},
-		ResponseSeqNo: h.SeqNo,
-		Status:        0,
-		token:         "token",
-	}
-
-	conn.Write(t8100.Encode())
-}
-
 func init() {
 	//注册 TODO ，保证协程安全，可在连接时动态创建
 	//TODO 增加context上下文处理
@@ -42,6 +27,7 @@ func init() {
 	RegisterCodec(codec)
 }
 func (h *T0100) Parse(msg *JTMessage) error {
+	h.JTMessage = *msg
 	// 假设 body 已经在 jtMsg.Body
 	slog.Info("解析数据，然后Process处理", slog.Any("msg", msg))
 	//len(msg.Body)
@@ -57,4 +43,21 @@ func (h *T0100) Encode() []byte { return []byte{0x02, 0x00} }
 
 func (h *T0100) GetMsgId() MsgId {
 	return P0100
+}
+func (h *T0100) OnMsg(conn net.Conn) {
+
+	//业务回复
+	t8100 := T8100{
+		JTMessage: JTMessage{
+			MsgID:      P8100,
+			TerminalNo: h.TerminalNo,
+		},
+		ResponseSeqNo: h.SeqNo,
+		Status:        0,
+		Token:         "htzj-1264579279",
+	}
+	frame := t8100.Encode()
+	slog.Info("转义编码发送帧", slog.Any("frame", hex.EncodeToString(frame)))
+	conn.Write(frame)
+
 }

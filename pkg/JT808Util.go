@@ -58,26 +58,38 @@ func Unescape(input []byte) ([]byte, error) {
 	}
 	return out.Bytes(), nil
 }
+func StringToBCD(s string) []byte {
 
-// 校验（从第2个字节到倒数第2个字节异或）
-func Check(frame []byte) bool {
-	//if len(frame) < 3 {
-	//	return false
-	//}
-	//sum := byte(0)
-	//for _, b := range frame[1 : len(frame)-2] {
-	//	sum ^= b
-	//}
-	sum := CRC(frame)
-	return sum == frame[len(frame)-2]
+	// 如果是奇数长度，前补0
+	if len(s)%2 == 1 {
+		s = "0" + s
+	}
+
+	b := make([]byte, len(s)/2)
+
+	for i := 0; i < len(s); i += 2 {
+
+		high := s[i] - '0'
+		low := s[i+1] - '0'
+
+		b[i/2] = (high << 4) | low
+	}
+
+	return b
 }
 
-func CRC(frame []byte) byte {
-	sum := byte(0)
-	for _, b := range frame[1 : len(frame)-2] {
-		sum ^= b
+// 校验（从第2个字节到倒数第2个字节异或）
+//func Check(frame []byte) bool {
+//	sum := CRC(frame)
+//	return sum == frame[len(frame)-2]
+//}
+
+func XOR(data []byte) byte {
+	var cs byte
+	for _, b := range data {
+		cs ^= b
 	}
-	return sum
+	return cs
 }
 
 // BCDToString 把BCD码转为字符串
@@ -125,14 +137,14 @@ func PackFrame(msg JTMessage) []byte {
 	binary.BigEndian.PutUint16(header[0:], uint16(msg.MsgID))
 	binary.BigEndian.PutUint16(header[2:], attr)
 
-	copy(header[4:], msg.TerminalNo)
+	copy(header[4:], StringToBCD(msg.TerminalNo))
 
 	binary.BigEndian.PutUint16(header[10:], msg.SeqNo)
 
 	buf = append(buf, header...)
 	buf = append(buf, msg.Body...)
 
-	cs := CRC(buf)
+	cs := XOR(buf)
 
 	buf = append(buf, cs)
 
@@ -145,4 +157,22 @@ func PackFrame(msg JTMessage) []byte {
 	frame = append(frame, 0x7E)
 
 	return frame
+}
+
+func Get8001Buf(message JTMessage, result uint8) []byte {
+	//包回昨
+	t8001 := T8001{
+		JTMessage: JTMessage{
+			MsgID:      P8001,
+			TerminalNo: message.TerminalNo,
+		},
+		//回复序号
+		ResponseSeqNo: message.SeqNo,
+		//回复消息ID
+		ResponseMsgID: uint16(message.MsgID),
+		//结果
+		Result: result,
+	}
+	frame1 := t8001.Encode()
+	return frame1
 }

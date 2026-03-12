@@ -51,8 +51,8 @@ func parseFrame(conn net.Conn) {
 		}
 		//转义
 		frame, _ = Unescape(frame)
-		//校验
-		if !Check(frame) {
+		//校验:MSGID~BODY; BCC,7E 不算
+		if XOR(frame[1:len(frame)-2]) != frame[len(frame)-2] {
 			slog.Error("帧校验失败")
 		}
 		slog.Info("转义解码后的帧", slog.Any("frame", hex.EncodeToString(frame)))
@@ -64,7 +64,9 @@ func parseFrame(conn net.Conn) {
 
 			slog.Info("调用解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(decoder.GetMsgId()))), slog.Any("msgId", decoder.GetMsgId().String()))
 			//解析字段
+
 			decoder.Parse(&msg)
+
 			//分派处理
 			//OnMsg(decoder, conn)
 			decoder.OnMsg(conn)
