@@ -30,7 +30,8 @@ func (h *T0200) OnMsg(conn net.Conn) {
 func init() {
 	codec := &T0200{}
 	codec.MsgID = P0200
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 
 func (h *T0200) Parse(jtMsg *JTMessage) error {

@@ -23,7 +23,8 @@ func (h *T8001) OnMsg(conn net.Conn) {
 func init() {
 	codec := &T8001{}
 	codec.MsgID = P8001
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T8001) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body

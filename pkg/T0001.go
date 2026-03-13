@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"log/slog"
 	"net"
 )
 
@@ -14,15 +15,15 @@ type T0001 struct {
 }
 
 func (h *T0001) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	slog.Info("不处理设备通用应答")
 }
 
 func init() {
 
 	codec := &T0001{}
 	codec.MsgID = P0001
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T0001) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body

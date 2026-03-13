@@ -24,7 +24,8 @@ func init() {
 	//TODO 增加context上下文处理
 	codec := &T0100{}
 	codec.MsgID = P0100
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T0100) Parse(msg *JTMessage) error {
 	h.JTMessage = *msg

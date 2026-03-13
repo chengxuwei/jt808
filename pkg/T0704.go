@@ -1,6 +1,10 @@
 package pkg
 
-import "net"
+import (
+	"encoding/hex"
+	"log/slog"
+	"net"
+)
 
 /*
 *
@@ -12,15 +16,18 @@ type T0704 struct {
 }
 
 func (h *T0704) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	//包回昨
+	frame1 := Get8001Buf(h.JTMessage, 0)
+	slog.Info("T8001转义编码发送帧", slog.Any("frame", hex.EncodeToString(frame1)))
+	conn.Write(frame1)
 }
 
 func init() {
 
 	codec := &T0704{}
 	codec.MsgID = P0704
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T0704) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body

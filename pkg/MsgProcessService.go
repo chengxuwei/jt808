@@ -31,7 +31,8 @@ var (
 	P6006 = MsgId(0x06006)
 
 	//解码Map
-	decodeFuncMap = make(map[MsgId]JT808Codec)
+	decodeFuncMap = make(map[MsgId]JT808Decoder)
+	encodeFuncMap = make(map[MsgId]JT808Encoder)
 	//处理
 	//会话Map
 	sessionMap sync.Map
@@ -81,12 +82,16 @@ func (msgId MsgId) String() string {
 }
 
 type (
-	JT808Codec interface {
-		Parse(jtMsg *JTMessage) error // 解析终端上传的body数据
-		Encode() []byte
+	JT808Decoder interface {
 		GetMsgId() MsgId
+		Parse(jtMsg *JTMessage) error // 解析终端上传的body数据
+		//Encode() []byte
 		//消息处理
 		OnMsg(conn net.Conn) //返回名称
+	}
+	JT808Encoder interface {
+		GetMsgId() MsgId
+		Encode() []byte
 	}
 	Session struct {
 		Conn net.Conn
@@ -98,10 +103,15 @@ type (
 		*
 	  注册Handler
 */
-func RegisterCodec(handler JT808Codec) {
+func RegisterDecode(handler JT808Decoder) {
 	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(handler.GetMsgId()))), slog.Any("msgId", handler.GetMsgId().String()))
 
 	decodeFuncMap[handler.GetMsgId()] = handler
+}
+func RegisterEncode(handler JT808Encoder) {
+	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(handler.GetMsgId()))), slog.Any("msgId", handler.GetMsgId().String()))
+
+	encodeFuncMap[handler.GetMsgId()] = handler
 }
 
 /*
@@ -129,7 +139,7 @@ func idelSession(imei string, conn net.Conn) {
 *
 获取Handler
 */
-func GetDecoder(msgId MsgId) JT808Codec {
+func GetDecoder(msgId MsgId) JT808Decoder {
 	decoder := decodeFuncMap[msgId]
 	return decoder
 }

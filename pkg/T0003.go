@@ -5,6 +5,10 @@ import (
 	"net"
 )
 
+/*
+*
+注销
+*/
 type T0003 struct {
 	JTMessage
 }
@@ -18,7 +22,8 @@ func init() {
 
 	codec := &T0003{}
 	codec.MsgID = P0003
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T0003) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body

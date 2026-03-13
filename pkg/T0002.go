@@ -9,7 +9,7 @@ import (
 /*
 *
 
-	终端通用应答
+	P0002终端-心跳
 */
 type T0002 struct {
 	JTMessage
@@ -27,7 +27,8 @@ func init() {
 	//TODO 增加context上下文处理
 	codec := &T0002{}
 	codec.MsgID = P0002
-	RegisterCodec(codec)
+	RegisterDecode(codec)
+	RegisterEncode(codec)
 }
 func (h *T0002) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
