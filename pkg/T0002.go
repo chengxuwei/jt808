@@ -16,9 +16,10 @@ type T0002 struct {
 }
 
 func (h *T0002) OnMsg(conn net.Conn) {
+	logJT808DecodedJSON("收到终端心跳（JSON）", h)
 	//包回昨
 	frame1 := Get8001Buf(h.JTMessage, 0)
-	slog.Info("T8001转义编码发送帧", slog.Any("frame", hex.EncodeToString(frame1)))
+	slog.Info("T8001转义编码发送帧", slog.String("terminalNo", h.TerminalNo), slog.String("msgId", h.MsgID.String()), slog.Any("frame", hex.EncodeToString(frame1)))
 	conn.Write(frame1)
 }
 
@@ -32,7 +33,7 @@ func init() {
 }
 func (h *T0002) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
-
+	h.JTMessage = *msg
 	return nil
 }
 

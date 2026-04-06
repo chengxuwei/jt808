@@ -1,11 +1,13 @@
 package pkg
 
 import (
+	"log"
+	"log/slog"
+
 	mqtt "github.com/mochi-mqtt/server/v2"
 	"github.com/mochi-mqtt/server/v2/hooks/auth"
 	"github.com/mochi-mqtt/server/v2/listeners"
 	"github.com/mochi-mqtt/server/v2/packets"
-	"log"
 )
 
 type MQTTServer struct {
@@ -13,7 +15,10 @@ type MQTTServer struct {
 }
 
 func (m *MQTTServer) PublishMsg(topic string, msg string, qos byte) {
-	m.server.Publish(topic, []byte(msg), true, 1)
+	if m == nil || m.server == nil {
+		return
+	}
+	_ = m.server.Publish(topic, []byte(msg), false, qos)
 }
 
 func (m *MQTTServer) StartMqttBroker() {
@@ -21,6 +26,7 @@ func (m *MQTTServer) StartMqttBroker() {
 		InlineClient: true,
 	}
 	server := mqtt.New(options)
+	m.server = server
 
 	// 创建基于用户名密码的认证
 	//server.AddHook(new(auth.Hook), &auth.Options{
@@ -55,11 +61,18 @@ func (m *MQTTServer) StartMqttBroker() {
 		log.Fatal(err)
 	}
 
-	// 4. 订阅示例
-	callbackFn := func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet) {
-		server.Log.Info("收到一个MQTT消息，转发到JT808服务器", "client", cl.ID, "subscriptionId", sub.Identifier, "topic", pk.TopicName, "payload", string(pk.Payload))
+	// 订阅 send/{terminalNo}/{msgId}，payload 为下发终端的 JT808 完整帧（二进制）
+	sendHandler := func(cl *mqtt.Client, sub packets.Subscription, pk packets.Packet) {
+		slog.Info("MQTT 下行",
+			slog.String("client", cl.ID),
+			slog.String("topic", pk.TopicName),
+			slog.Int("payloadLen", len(pk.Payload)),
+		)
+		HandleMQTTSendTopic(pk.TopicName, pk.Payload)
 	}
-	server.Subscribe("direct/#", 1, callbackFn)
+	if err := server.Subscribe("send/+/+", 1, sendHandler); err != nil {
+		log.Fatal(err)
+	}
 
 	// 5. 启动服务
 	err1 := server.Serve()

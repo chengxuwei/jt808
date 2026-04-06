@@ -33,7 +33,7 @@ func (h *T0100) Parse(msg *JTMessage) error {
 	slog.Info("解析数据，然后Process处理", slog.Any("msg", msg))
 	//len(msg.Body)
 	// 检查body长度是否为0
-	if len(msg.Body) != 0 {
+	if len(msg.Body) == 0 {
 		return fmt.Errorf("body长度错误，期望为0，实际为%d", len(msg.Body))
 	}
 
@@ -46,7 +46,7 @@ func (h *T0100) GetMsgId() MsgId {
 	return P0100
 }
 func (h *T0100) OnMsg(conn net.Conn) {
-
+	logJT808DecodedJSON("收到终端注册 0x0100（JSON）", h)
 	//业务回复
 	t8100 := T8100{
 		JTMessage: JTMessage{
@@ -58,7 +58,7 @@ func (h *T0100) OnMsg(conn net.Conn) {
 		Token:         "htzj-1264579279",
 	}
 	frame := t8100.Encode()
-	slog.Info("转义编码发送帧", slog.Any("frame", hex.EncodeToString(frame)))
+	slog.Info("转义编码发送帧", slog.String("terminalNo", h.TerminalNo), slog.String("msgId", h.MsgID.String()), slog.Any("frame", hex.EncodeToString(frame)))
 	conn.Write(frame)
 
 }

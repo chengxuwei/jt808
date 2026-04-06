@@ -11,7 +11,7 @@ import (
 
 func StartJT808() {
 	ln, err := net.Listen("tcp", ":1808")
-	log.Println("JT808 服务器临听 :1808")
+	log.Println("JT808 服务器监听 :1808")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -33,7 +33,11 @@ func StartJT808() {
 }
 
 func parseFrame(conn net.Conn) {
-	defer conn.Close()
+	lastTerminal := ""
+	defer func() {
+		UnregisterSessionIfConn(lastTerminal, conn)
+		conn.Close()
+	}()
 	reader := bufio.NewReader(conn)
 	for {
 		frame, err := reader.ReadBytes(0x7e)
@@ -55,20 +59,27 @@ func parseFrame(conn net.Conn) {
 		if XOR(frame[1:len(frame)-2]) != frame[len(frame)-2] {
 			slog.Error("帧校验失败")
 		}
-		slog.Info("转义解码后的帧", slog.Any("frame", hex.EncodeToString(frame)))
 		//解析头,默认不分包
 		msg := ParseFrame(frame)
-		slog.Info("收到BODY", slog.Any("msg", hex.EncodeToString(msg.Body)))
+		lastTerminal = msg.TerminalNo
+
+		slog.Info("转义解码后的帧", slog.String("terminalNo", lastTerminal), slog.String("msgId", msg.MsgID.String()), slog.Any("frame", hex.EncodeToString(frame)))
+
+		//slog.Info("收到BODY", slog.String("终端号：", msg.TerminalNo), slog.Any("消息ID", msg.MsgID), slog.Any("msg", hex.EncodeToString(msg.Body)))
 		decoder := GetDecoder(msg.MsgID)
 		if decoder != nil {
-
-			slog.Info("调用解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(decoder.GetMsgId()))), slog.Any("msgId", decoder.GetMsgId().String()))
-			//解析字段
-
-			decoder.Parse(&msg)
-
-			//分派处理
-			//OnMsg(decoder, conn)
+			// INSERT_YOUR_CODE
+			slog.Info("终端号和解码器信息", slog.String("终端号", msg.TerminalNo), slog.String("解码器", fmt.Sprintf("%T", decoder)))
+			// slog.Info("调用解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(msg.MsgID))), slog.String("msgId", msg.MsgID.String())	)
+			if err := decoder.Parse(&msg); err != nil {
+				slog.Error("解码失败", slog.Any("err", err))
+				continue
+			}
+			//会话处理
+			RegisterSession(&Session{Conn: conn, IMEI: msg.TerminalNo})
+			//发送
+			PublishRecvDecoded(msg.TerminalNo, msg.MsgID, decoder)
+			//业务处理
 			decoder.OnMsg(conn)
 		} else {
 			slog.Info("没找到", slog.Any("msg", msg))

@@ -27,7 +27,7 @@ func init() {
 }
 func (h *T0003) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
-
+	h.JTMessage = *msg
 	return nil
 }
 

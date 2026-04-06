@@ -19,5 +19,5 @@ func main() {
 		Token:         "htzj-1264579279",
 	}
 	frame := t8100.Encode()
-	slog.Info("转义编码发送帧", slog.Any("frame", strings.ToUpper(hex.EncodeToString(frame)))) //pkg.StartJT808()
+	slog.Info("转义编码发送帧", slog.String("terminalNo", t8100.TerminalNo), slog.String("msgId", t8100.MsgID.String()), slog.Any("frame", strings.ToUpper(hex.EncodeToString(frame)))) //pkg.StartJT808()
 }

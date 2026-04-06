@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
+	"reflect"
 	"sync"
 )
 
@@ -30,9 +31,10 @@ var (
 	P8300 = MsgId(0x08300)
 	P6006 = MsgId(0x06006)
 
-	//解码Map
-	decodeFuncMap = make(map[MsgId]JT808Decoder)
-	encodeFuncMap = make(map[MsgId]JT808Encoder)
+	// decodeFuncMap 按消息 ID 创建独立解码器实例；原因：多终端并发连接时避免共用一个 Parse 状态；注释人：Cursor
+	decodeFuncMap = make(map[MsgId]func() JT808Decoder)
+	// encodeFactoryMap 按消息 ID 创建独立编码器实例；原因：MQTT/并发下行时避免共用一个 Encode 状态；注释人：Cursor
+	encodeFactoryMap = make(map[MsgId]func() JT808Encoder)
 	//处理
 	//会话Map
 	sessionMap sync.Map
@@ -104,14 +106,39 @@ type (
 	  注册Handler
 */
 func RegisterDecode(handler JT808Decoder) {
-	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(handler.GetMsgId()))), slog.Any("msgId", handler.GetMsgId().String()))
+	id := handler.GetMsgId()
+	rt := reflect.TypeOf(handler)
+	if rt == nil || rt.Kind() != reflect.Ptr {
+		slog.Error("RegisterDecode 需要指针类型解码器", slog.String("msgId", id.String()))
+		return
+	}
+	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(id))), slog.Any("msgId", id.String()))
 
-	decodeFuncMap[handler.GetMsgId()] = handler
+	decodeFuncMap[id] = func() JT808Decoder {
+		return reflect.New(rt.Elem()).Interface().(JT808Decoder)
+	}
 }
 func RegisterEncode(handler JT808Encoder) {
-	slog.Info("注册一个解码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(handler.GetMsgId()))), slog.Any("msgId", handler.GetMsgId().String()))
+	id := handler.GetMsgId()
+	rt := reflect.TypeOf(handler)
+	if rt == nil || rt.Kind() != reflect.Ptr {
+		slog.Error("RegisterEncode 需要指针类型编码器", slog.String("msgId", id.String()))
+		return
+	}
+	slog.Info("注册一个编码器", slog.String("hex:", fmt.Sprintf("0x%04X", uint16(id))), slog.Any("msgId", id.String()))
 
-	encodeFuncMap[handler.GetMsgId()] = handler
+	encodeFactoryMap[id] = func() JT808Encoder {
+		return reflect.New(rt.Elem()).Interface().(JT808Encoder)
+	}
+}
+
+// GetEncoder 返回对应消息 ID 的新编码器实例；原因：下行 JSON 填充后 Encode，与 RegisterEncode 成对使用；注释人：Cursor
+func GetEncoder(msgId MsgId) JT808Encoder {
+	f := encodeFactoryMap[msgId]
+	if f == nil {
+		return nil
+	}
+	return f()
 }
 
 /*
@@ -121,7 +148,22 @@ func SendMsgToDevice(imei string, msg []byte) {
 	storeObj, ok := sessionMap.Load(imei)
 	if ok {
 		session := storeObj.(*Session)
-		session.Conn.Write(msg)
+		_, _ = session.Conn.Write(msg)
+	}
+}
+
+// UnregisterSessionIfConn 仅当当前连接仍为该终端会话时删除；原因：避免误删新连接的 Session；注释人：Cursor
+func UnregisterSessionIfConn(terminalNo string, c net.Conn) {
+	if terminalNo == "" || c == nil {
+		return
+	}
+	storeObj, ok := sessionMap.Load(terminalNo)
+	if !ok {
+		return
+	}
+	session := storeObj.(*Session)
+	if session.Conn == c {
+		sessionMap.Delete(terminalNo)
 	}
 }
 
@@ -140,8 +182,11 @@ func idelSession(imei string, conn net.Conn) {
 获取Handler
 */
 func GetDecoder(msgId MsgId) JT808Decoder {
-	decoder := decodeFuncMap[msgId]
-	return decoder
+	f := decodeFuncMap[msgId]
+	if f == nil {
+		return nil
+	}
+	return f()
 }
 
 /*

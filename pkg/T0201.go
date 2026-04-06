@@ -16,7 +16,7 @@ type T0201 struct {
 func (h *T0201) OnMsg(conn net.Conn) {
 	//包回昨
 	frame1 := Get8001Buf(h.JTMessage, 0)
-	slog.Info("T8001转义编码发送帧", slog.Any("frame", hex.EncodeToString(frame1)))
+	slog.Info("【T0201】回复8001", slog.Any("frame", hex.EncodeToString(frame1)))
 	conn.Write(frame1)
 }
 

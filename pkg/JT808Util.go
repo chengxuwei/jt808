@@ -3,7 +3,9 @@ package pkg
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
+	"log/slog"
 )
 
 const (
@@ -90,6 +92,16 @@ func XOR(data []byte) byte {
 		cs ^= b
 	}
 	return cs
+}
+
+// logJT808DecodedJSON 序列化解码结果并 slog 输出，与 T0002 心跳 OnMsg 风格一致；原因：多消息类型统一日志形态；注释人：Cursor
+func logJT808DecodedJSON(title string, v any) {
+	msgJSON, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("序列化消息为JSON失败", slog.String("title", title), slog.Any("err", err))
+		return
+	}
+	slog.Info(title, slog.String("msg", string(msgJSON)))
 }
 
 // BCDToString 把BCD码转为字符串

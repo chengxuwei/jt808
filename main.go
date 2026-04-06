@@ -6,12 +6,9 @@ import "jt808/pkg"
 // the <icon src="AllIcons.Actions.Execute"/> icon in the gutter and select the <b>Run</b> menu item from here.</p>
 
 func main() {
-
-	//如果有多个服务，用GO异步处理
+	mqttSrv := &pkg.MQTTServer{}
+	pkg.SetMQTTBroker(mqttSrv)
+	go mqttSrv.StartMqttBroker()
 	go pkg.StartJT808()
-	//启动HTTP服务，TODO传JT808Server的SessionManager接口给HTTPServer实现下行数据发送
-	MQTTServer := pkg.MQTTServer{}
-	go MQTTServer.StartMqttBroker()
-	//阻塞
 	select {}
 }
