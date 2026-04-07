@@ -4,7 +4,9 @@ import "net"
 
 type T8300 struct {
 	JTMessage
-	MsgId
+	MsgId   MsgId  `json:"msgId"`
+	Type    string `json:"type"`
+	Content string `json:"Content"`
 }
 
 func (h *T8300) OnMsg(conn net.Conn) {
