@@ -1,0 +1,23 @@
+# JT808 网关配置文件
+# 环境变量覆盖规则：JT808_<KEY> (点替换为下划线)，如 JT808_LOG_LEVEL=debug
+
+log:
+  level: info   # debug | info | warn | error
+
+# 协议服务配置；新增协议在 servers 下添加同结构节点，并在 BuildServers 注册
+servers:
+  jt808:
+    enabled: true
+    addr: ":1808"
+    read_buffer: 4096   # TCP 读缓冲大小（字节）
+
+  # jt1078 示例（未实现，disabled）
+  # jt1078:
+  #   enabled: false
+  #   addr: ":1078"
+  #   read_buffer: 65536
+
+# 消息桥接 MQTT Broker 配置
+mqtt:
+  enabled: true
+  addr: ":1883"

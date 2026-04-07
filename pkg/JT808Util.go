@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 )
 
 const (
@@ -13,52 +14,69 @@ const (
 	FRAME = 0x7E
 )
 
+// bufPool 复用 bytes.Buffer，减少 Escape/Unescape 高频调用时的堆分配；注释原因：JT808每条消息都需要转义；注释人：Cursor
+var bufPool = sync.Pool{
+	New: func() any {
+		return bytes.NewBuffer(make([]byte, 0, 512))
+	},
+}
+
 func Escape(input []byte) []byte {
 	if len(input) == 0 {
 		return input
 	}
-	out := bytes.NewBuffer(make([]byte, 0, len(input)*2))
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
 	for _, b := range input {
 		switch b {
 		case ESC:
-			out.WriteByte(ESC)
-			out.WriteByte(0x01)
+			buf.WriteByte(ESC)
+			buf.WriteByte(0x01)
 		case FRAME:
-			out.WriteByte(ESC)
-			out.WriteByte(0x02)
+			buf.WriteByte(ESC)
+			buf.WriteByte(0x02)
 		default:
-			out.WriteByte(b)
+			buf.WriteByte(b)
 		}
 	}
-
-	return out.Bytes()
+	// 必须在归还 buf 前复制结果，否则调用方引用的切片会被下次 Reset 清空；注释人：Cursor
+	result := make([]byte, buf.Len())
+	copy(result, buf.Bytes())
+	bufPool.Put(buf)
+	return result
 }
 
 func Unescape(input []byte) ([]byte, error) {
 	if len(input) == 0 {
 		return input, nil
 	}
-	out := bytes.NewBuffer(make([]byte, 0, len(input)))
+	buf := bufPool.Get().(*bytes.Buffer)
+	buf.Reset()
 	for i := 0; i < len(input); i++ {
 		b := input[i]
 		if b == ESC {
 			if i+1 >= len(input) {
+				bufPool.Put(buf)
 				return nil, fmt.Errorf("truncated escape sequence")
 			}
 			i++
 			switch input[i] {
 			case 0x01:
-				out.WriteByte(ESC)
+				buf.WriteByte(ESC)
 			case 0x02:
-				out.WriteByte(FRAME)
+				buf.WriteByte(FRAME)
 			default:
+				bufPool.Put(buf)
 				return nil, fmt.Errorf("invalid escape code 0x%02X", input[i])
 			}
 		} else {
-			out.WriteByte(b)
+			buf.WriteByte(b)
 		}
 	}
-	return out.Bytes(), nil
+	result := make([]byte, buf.Len())
+	copy(result, buf.Bytes())
+	bufPool.Put(buf)
+	return result, nil
 }
 func StringToBCD(s string) []byte {
 
@@ -137,54 +155,45 @@ func ParseFrame(frame []byte) JTMessage {
 }
 
 func PackFrame(msg JTMessage) []byte {
-
 	bodyLen := len(msg.Body)
-
 	attr := uint16(bodyLen) // 不分包 不加密
 
-	buf := make([]byte, 0, 1024)
+	// 按实际大小预分配：12字节头 + body + 1字节BCC；注释原因：避免固定1024浪费或扩容；注释人：Cursor
+	buf := make([]byte, 0, 12+bodyLen+1)
 
 	header := make([]byte, 12)
-
 	binary.BigEndian.PutUint16(header[0:], uint16(msg.MsgID))
 	binary.BigEndian.PutUint16(header[2:], attr)
-
 	copy(header[4:], StringToBCD(msg.TerminalNo))
-
 	binary.BigEndian.PutUint16(header[10:], msg.SeqNo)
 
 	buf = append(buf, header...)
 	buf = append(buf, msg.Body...)
+	buf = append(buf, XOR(buf))
 
-	cs := XOR(buf)
+	escaped := Escape(buf)
 
-	buf = append(buf, cs)
-
-	buf = Escape(buf)
-
-	frame := make([]byte, 0, len(buf)+2)
-
+	frame := make([]byte, 0, len(escaped)+2)
 	frame = append(frame, 0x7E)
-	frame = append(frame, buf...)
+	frame = append(frame, escaped...)
 	frame = append(frame, 0x7E)
 
 	return frame
 }
 
-func Get8001Buf(message JTMessage, result uint8) []byte {
-	//包回昨
+// Get8001Buf 构造平台通用应答 T8001 帧，同时返回本次分配的平台下行序号供调用方打印日志；
+// 注释原因：SeqNo 由 NextSeqNo 分配，调用方需获取以便记录全链路日志；注释人：Cursor
+func Get8001Buf(message JTMessage, result uint8) (frame []byte, seqNo uint16) {
+	seqNo = NextSeqNo(message.TerminalNo)
 	t8001 := T8001{
 		JTMessage: JTMessage{
 			MsgID:      P8001,
 			TerminalNo: message.TerminalNo,
+			SeqNo:      seqNo,
 		},
-		//回复序号
-		ResponseSeqNo: message.SeqNo,
-		//回复消息ID
+		ResponseSeqNo: message.SeqNo,        // 回复的是终端上行序号
 		ResponseMsgID: uint16(message.MsgID),
-		//结果
-		Result: result,
+		Result:        result,
 	}
-	frame1 := t8001.Encode()
-	return frame1
+	return t8001.Encode(), seqNo
 }

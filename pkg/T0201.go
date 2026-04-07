@@ -14,10 +14,16 @@ type T0201 struct {
 }
 
 func (h *T0201) OnMsg(conn net.Conn) {
-	//包回昨
-	frame1 := Get8001Buf(h.JTMessage, 0)
-	slog.Info("【T0201】回复8001", slog.Any("frame", hex.EncodeToString(frame1)))
-	conn.Write(frame1)
+	frame1, seqNo := Get8001Buf(h.JTMessage, 0)
+	slog.Info("T0201 回复 T8001",
+		slog.String("terminalNo", h.TerminalNo),
+		slog.String("recvMsgId", h.MsgID.String()),
+		slog.Uint64("seqNo", uint64(seqNo)),
+		slog.String("frameHex", hex.EncodeToString(frame1)),
+	)
+	if _, err := conn.Write(frame1); err != nil {
+		slog.Error("T0201 回复 T8001 失败", slog.String("terminalNo", h.TerminalNo), slog.Any("err", err))
+	}
 }
 
 func init() {
@@ -28,8 +34,7 @@ func init() {
 	RegisterEncode(codec)
 }
 func (h *T0201) Parse(msg *JTMessage) error {
-	// 假设 body 已经在 jtMsg.Body
-
+	h.JTMessage = *msg
 	return nil
 }
 

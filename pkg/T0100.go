@@ -32,9 +32,9 @@ func (h *T0100) Parse(msg *JTMessage) error {
 	// 假设 body 已经在 jtMsg.Body
 	slog.Info("解析数据，然后Process处理", slog.Any("msg", msg))
 	//len(msg.Body)
-	// 检查body长度是否为0
+	// T0100注册消息body不能为空；注释原因：注册报文必须携带省市等注册信息；注释人：Cursor
 	if len(msg.Body) == 0 {
-		return fmt.Errorf("body长度错误，期望为0，实际为%d", len(msg.Body))
+		return fmt.Errorf("T0100 body为空，注册消息body长度必须大于0")
 	}
 
 	return nil
@@ -47,18 +47,26 @@ func (h *T0100) GetMsgId() MsgId {
 }
 func (h *T0100) OnMsg(conn net.Conn) {
 	logJT808DecodedJSON("收到终端注册 0x0100（JSON）", h)
-	//业务回复
+	//业务回复；注释原因：SeqNo 由 NextSeqNo 分配，与终端上行序号独立；注释人：Cursor
 	t8100 := T8100{
 		JTMessage: JTMessage{
 			MsgID:      P8100,
 			TerminalNo: h.TerminalNo,
+			SeqNo:      NextSeqNo(h.TerminalNo), // 平台侧独立递增序号
 		},
-		ResponseSeqNo: h.SeqNo,
+		ResponseSeqNo: h.SeqNo, // 回复终端上行序号
 		Status:        0,
 		Token:         "htzj-1264579279",
 	}
 	frame := t8100.Encode()
-	slog.Info("转义编码发送帧", slog.String("terminalNo", h.TerminalNo), slog.String("msgId", h.MsgID.String()), slog.Any("frame", hex.EncodeToString(frame)))
-	conn.Write(frame)
+	slog.Info("T0100 回复 T8100",
+		slog.String("terminalNo", h.TerminalNo),
+		slog.String("recvMsgId", h.MsgID.String()),
+		slog.Uint64("seqNo", uint64(t8100.SeqNo)),
+		slog.String("frameHex", hex.EncodeToString(frame)),
+	)
+	if _, err := conn.Write(frame); err != nil {
+		slog.Error("T0100 回复 T8100 失败", slog.String("terminalNo", h.TerminalNo), slog.Any("err", err))
+	}
 
 }

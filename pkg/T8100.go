@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/binary"
+	"log/slog"
 	"net"
 )
 
@@ -16,8 +17,8 @@ type T8100 struct {
 }
 
 func (h *T8100) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	// T8100 是平台下发的注册应答，终端收到后由终端处理；注释原因：平台侧无需再回调；注释人：Cursor
+	slog.Debug("收到 T8100 平台注册应答（下行消息，无需处理）", slog.String("terminalNo", h.TerminalNo))
 }
 
 func init() {

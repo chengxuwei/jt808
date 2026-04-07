@@ -1,17 +1,21 @@
 package pkg
 
-import "net"
+import (
+	"log/slog"
+	"net"
+)
 
+// T8300 平台文本信息下发 0x8300（JT/T 808）
+// Flag 标志位：bit0=紧急 bit1=手动关闭 bit2=终端显示 bit3=居中显示 bit4=定时播报；注释人：Cursor
 type T8300 struct {
 	JTMessage
-	MsgId   MsgId  `json:"msgId"`
-	Type    string `json:"type"`
-	Content string `json:"Content"`
+	Flag    uint8  `json:"Flag"`    // 标志，JSON字段名保持 type 与协议工具兼容；注释人：Cursor
+	Content string `json:"Content"` // 文本内容，UTF-8 编码
 }
 
 func (h *T8300) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	// T8300 是平台下发的文本信息，终端收到后显示；注释原因：平台侧收到回调时无需处理；注释人：Cursor
+	slog.Debug("收到 T8300 文本信息下发（下行消息，无需处理）", slog.String("terminalNo", h.TerminalNo))
 }
 
 func init() {
@@ -20,13 +24,26 @@ func init() {
 	RegisterDecode(codec)
 	RegisterEncode(codec)
 }
-func (h *T8300) Parse(msg *JTMessage) error {
-	// 假设 body 已经在 jtMsg.Body
 
+func (h *T8300) Parse(msg *JTMessage) error {
+	h.JTMessage = *msg
 	return nil
 }
 
-func (h *T8300) Encode() []byte { return []byte{0x02, 0x00} }
+// Encode 编码 T8300 文本信息下发帧；注释原因：Body = 标志(1字节) + 文本内容(UTF-8)；注释人：Cursor
+func (h *T8300) Encode() []byte {
+	content := []byte(h.Content)
+	// Body: 标志(1字节) + 文本内容(n字节)
+	body := make([]byte, 1+len(content))
+	body[0] = h.Flag
+	copy(body[1:], content)
+	return PackFrame(JTMessage{
+		MsgID:      P8300,
+		TerminalNo: h.TerminalNo,
+		SeqNo:      h.SeqNo,
+		Body:       body,
+	})
+}
 
 func (h *T8300) GetMsgId() MsgId {
 	return h.MsgID

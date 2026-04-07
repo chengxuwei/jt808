@@ -1,6 +1,9 @@
 package pkg
 
-import "net"
+import (
+	"log/slog"
+	"net"
+)
 
 /*
 *
@@ -10,8 +13,8 @@ type T8201 struct {
 }
 
 func (h *T8201) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	// T8201 是平台下发的位置查询，终端收到后上报位置；注释原因：平台侧收到回调时无需处理；注释人：Cursor
+	slog.Debug("收到 T8201 平台位置查询（下行消息，无需处理）", slog.String("terminalNo", h.TerminalNo))
 }
 
 func init() {

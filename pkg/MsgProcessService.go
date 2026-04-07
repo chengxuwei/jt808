@@ -14,7 +14,7 @@ var (
 	//消息ID定义
 	P0001 = MsgId(0x0001)
 	P0002 = MsgId(0x0002)
-	P8001 = MsgId(0x08001)
+	P8001 = MsgId(0x8001)
 	P0100 = MsgId(0x0100)
 	P8100 = MsgId(0x8100)
 	P0003 = MsgId(0x0003)
@@ -28,8 +28,8 @@ var (
 	P0104 = MsgId(0x0104)
 	P8201 = MsgId(0x8201)
 	P0201 = MsgId(0x0201)
-	P8300 = MsgId(0x08300)
-	P6006 = MsgId(0x06006)
+	P8300 = MsgId(0x8300)
+	P6006 = MsgId(0x6006)
 
 	// decodeFuncMap 按消息 ID 创建独立解码器实例；原因：多终端并发连接时避免共用一个 Parse 状态；注释人：Cursor
 	decodeFuncMap = make(map[MsgId]func() JT808Decoder)
@@ -172,9 +172,6 @@ func UnregisterSessionIfConn(terminalNo string, c net.Conn) {
  */
 func RegisterSession(session *Session) {
 	sessionMap.Store(session.IMEI, session)
-}
-func idelSession(imei string, conn net.Conn) {
-
 }
 
 /*

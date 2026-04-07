@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"encoding/binary"
+	"log/slog"
 	"net"
 )
 
@@ -16,8 +17,8 @@ type T8001 struct {
 }
 
 func (h *T8001) OnMsg(conn net.Conn) {
-	//TODO implement me
-	panic("implement me")
+	// 平台通用应答由平台下发，终端收到后不需要平台再处理；注释原因：T8001 是下行消息；注释人：Cursor
+	slog.Debug("收到 T8001 平台通用应答（下行消息，无需处理）", slog.String("terminalNo", h.TerminalNo))
 }
 
 func init() {
@@ -42,7 +43,7 @@ func (h *T8001) Encode() []byte {
 	body[4] = h.Result
 	msg := JTMessage{
 		TerminalNo: h.TerminalNo,
-		SeqNo:      111,
+		SeqNo:      h.SeqNo,
 		Body:       body,
 		MsgID:      h.MsgID,
 	}
