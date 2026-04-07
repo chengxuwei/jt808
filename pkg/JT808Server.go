@@ -39,12 +39,16 @@ func (s *JT808Server) Start() error {
 		return fmt.Errorf("[%s] 监听 %s 失败: %w", s.Name(), addr, err)
 	}
 	defer ln.Close()
-	log.Printf("[%s] 服务启动，监听 %s，读缓冲 %d 字节", s.Name(), addr, bufSize)
+	slog.Info("服务启动",
+		slog.String("server", s.Name()),
+		slog.String("addr", ln.Addr().String()),
+		slog.Int("readBuffer", bufSize),
+	)
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Printf("[%s] accept error: %v", s.Name(), err)
+			slog.Error("accept 连接失败", slog.String("server", s.Name()), slog.Any("err", err))
 			continue
 		}
 		slog.Info("收到一个连接",

@@ -32,6 +32,13 @@ func (h *T8300) Parse(msg *JTMessage) error {
 
 // Encode 编码 T8300 文本信息下发帧；注释原因：Body = 标志(1字节) + 文本内容(UTF-8)；注释人：Cursor
 func (h *T8300) Encode() []byte {
+	slog.Info("[下行-6] T8300 编码前内容",
+		slog.String("terminalNo", h.TerminalNo),
+		slog.Uint64("seqNo", uint64(h.SeqNo)),
+		slog.Uint64("flag", uint64(h.Flag)),
+		slog.String("content", h.Content),
+		slog.Int("contentLen", len(h.Content)),
+	)
 	content := []byte(h.Content)
 	// Body: 标志(1字节) + 文本内容(n字节)
 	body := make([]byte, 1+len(content))

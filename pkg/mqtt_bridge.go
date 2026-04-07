@@ -99,12 +99,13 @@ func HandleMQTTSendTopic(topic string, payload []byte) {
 		return
 	}
 	msgIdHex := fmt.Sprintf("%04X", uint16(msgID))
-	slog.Info("[下行-2] MQTT 主题解析成功",
+	slog.Info("[下行-2] MQTT 主题解析成功，收到原始 JSON",
 		slog.String("topic", topic),
 		slog.String("terminalNo", terminalNo),
 		slog.String("msgId", msgIdHex),
 		slog.String("msgName", msgID.String()),
 		slog.Int("payloadLen", len(payload)),
+		slog.String("rawJSON", string(payload)),
 	)
 
 	// 解析 MQTT envelope，优先取 data 字段；注释原因：平台可发 {data:{...}} 或裸 JSON 两种格式；注释人：Cursor
@@ -114,6 +115,11 @@ func HandleMQTTSendTopic(topic string, payload []byte) {
 	if len(env.Data) > 0 && string(env.Data) != "null" {
 		data = env.Data
 	}
+	slog.Info("[下行-2] 提取到编码器 data 字段",
+		slog.String("terminalNo", terminalNo),
+		slog.String("msgId", msgIdHex),
+		slog.String("data", string(data)),
+	)
 	if env.MsgID != 0 && MsgId(env.MsgID) != msgID {
 		slog.Warn("[下行-2] JSON 中 msgId 与主题不一致，以主题为准",
 			slog.String("topicMsgId", msgIdHex),

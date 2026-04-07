@@ -93,7 +93,11 @@ func (m *MQTTServer) StartMqttBroker(addr string) {
 		log.Fatal(err)
 	}
 
-	// 5. 启动服务
+	slog.Info("MQTT Broker 启动",
+		slog.String("addr", addr),
+		slog.String("topics", "send/+/+, /send/+/+"),
+	)
+	// 5. 启动服务（阻塞）
 	err1 := server.Serve()
 	if err1 != nil {
 		log.Fatal(err1)
