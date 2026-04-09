@@ -9,7 +9,7 @@ dev->jt808->mqtt
     "TerminalNo": "061000210052",
     "MsgID": 33536,
     "FLAG": 1,
-    "Content":"<SPBSJ*P:BSJGPS*C:10*H:300>"
+    "Content":"透传内容"
   }
 }
 
